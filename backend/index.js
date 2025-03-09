@@ -15,16 +15,25 @@ server.listen(port, () => {
 });
 
 io.on("connection", (socket) => {
-  console.log("接続されました");
+  console.log("接続されました", socket.id);
+  let currentRoom = null;
+  socket.join(currentRoom);
+
   socket.on("send_message", (data) => {
-    console.log(data);
-    io.to(data.room).emit("received_message", data.message);
+    io.to(data.room).emit("received_message", `${socket.id} >>>  ${data.message}`);
   });
+
   socket.on("join", (data) => {
-    console.log("--"+data);
+    socket.leave(currentRoom);
+
     socket.join(data.room);
+    currentRoom = data.room;
+
+    socket.emit("room_changed", { room: currentRoom });
+    socket.to(currentRoom).emit("joined", { user: socket.id });
   });
+
   socket.on("disconnect", () => {
-    console.log("切断されました");
+    console.log(`${socket.id} が切断されました`);
   });
 });
